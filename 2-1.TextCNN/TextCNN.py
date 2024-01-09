@@ -10,23 +10,24 @@ class TextCNN(nn.Module):
     def __init__(self):
         super(TextCNN, self).__init__()
         self.num_filters_total = num_filters * len(filter_sizes)
-        self.W = nn.Embedding(vocab_size, embedding_size)
-        self.Weight = nn.Linear(self.num_filters_total, num_classes, bias=False)
+        self.W = nn.Embedding(vocab_size, embedding_size)#embedding的维度
+        self.Weight = nn.Linear(self.num_filters_total, num_classes, bias=False)#weight输出的维度num_filters_total*分类数
         self.Bias = nn.Parameter(torch.ones([num_classes]))
         self.filter_list = nn.ModuleList([nn.Conv2d(1, num_filters, (size, embedding_size)) for size in filter_sizes])
-
+        #output:ModuleList((0-2): 3 x Conv2d(1, 3, kernel_size=(2, 2), stride=(1, 1)))
+        #nn.Conv2d：1为通道数，第二个维度为输出的通道数（深度）与filter数量相对应，后面的是卷积核的（高*宽）
     def forward(self, X):
         embedded_chars = self.W(X) # [batch_size, sequence_length, sequence_length]
-        embedded_chars = embedded_chars.unsqueeze(1) # add channel(=1) [batch, channel(=1), sequence_length, embedding_size]
+        embedded_chars = embedded_chars.unsqueeze(1)# # add channel(=1) [batch, channel(=1), sequence_length, embedding_size]在第二维增加一个1可以方便下面的Con2v卷积操作的通道数1，与之对齐
 
         pooled_outputs = []
-        for i, conv in enumerate(self.filter_list):
+        for i, conv in enumerate(self.filter_list):#conv是具体的卷积操作
             # conv : [input_channel(=1), output_channel(=3), (filter_height, filter_width), bias_option]
-            h = F.relu(conv(embedded_chars))
+            h = F.relu(conv(embedded_chars))#进行relu的激活
             # mp : ((filter_height, filter_width))
-            mp = nn.MaxPool2d((sequence_length - filter_sizes[i] + 1, 1))
+            mp = nn.MaxPool2d((sequence_length - filter_sizes[i] + 1, 1))#最大池化层，取每个的最大数,中间括号是kernel的大小
             # pooled : [batch_size(=6), output_height(=1), output_width(=1), output_channel(=3)]
-            pooled = mp(h).permute(0, 3, 2, 1)
+            pooled = mp(h).permute(0, 3, 2, 1)#permute函数的作用是对已有的tensor进行维度的换位
             pooled_outputs.append(pooled)
 
         h_pool = torch.cat(pooled_outputs, len(filter_sizes)) # [batch_size(=6), output_height(=1), output_width(=1), output_channel(=3) * 3]
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     word_list = " ".join(sentences).split()
     word_list = list(set(word_list))
     word_dict = {w: i for i, w in enumerate(word_list)}
-    vocab_size = len(word_dict)
+    vocab_size = len(word_dict)#词表长度
 
     model = TextCNN()
 
