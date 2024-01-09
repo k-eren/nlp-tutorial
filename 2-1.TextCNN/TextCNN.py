@@ -27,11 +27,11 @@ class TextCNN(nn.Module):
             # mp : ((filter_height, filter_width))
             mp = nn.MaxPool2d((sequence_length - filter_sizes[i] + 1, 1))#最大池化层，取每个的最大数,中间括号是kernel的大小
             # pooled : [batch_size(=6), output_height(=1), output_width(=1), output_channel(=3)]
-            pooled = mp(h).permute(0, 3, 2, 1)#permute函数的作用是对已有的tensor进行维度的换位
+            pooled = mp(h).permute(0, 3, 2, 1)#permute函数的作用是对已有的tensor进行维度的换位，因为nn.conv2d返回的张量维度是[batch_size, output_channel, output_height, output_width]，而最大池化通常期望的输入为[batch_size, input_channel, input_height, input_width]
             pooled_outputs.append(pooled)
 
-        h_pool = torch.cat(pooled_outputs, len(filter_sizes)) # [batch_size(=6), output_height(=1), output_width(=1), output_channel(=3) * 3]
-        h_pool_flat = torch.reshape(h_pool, [-1, self.num_filters_total]) # [batch_size(=6), output_height * output_width * (output_channel * 3)]
+        h_pool = torch.cat(pooled_outputs, len(filter_sizes)) # [batch_size(=6), output_height(=1), output_width(=1), output_channel(=3) * 3]在第三维进行拼接
+        h_pool_flat = torch.reshape(h_pool, [-1, self.num_filters_total]) # [batch_size(=6), output_height * output_width * (output_channel * 3)]h_pool_flat 是将 h_pool 张量沿着所有维度（除了第二个维度）压扁为一个二维张量(-1是指表示该维度的大小由张量的总元素数和其他指定的维度来推断，以保持总的元素数量不变。)
         model = self.Weight(h_pool_flat) + self.Bias # [batch_size, num_classes]
         return model
 
