@@ -9,7 +9,7 @@ def make_batch():
     input_batch, target_batch = [], []
 
     for seq in seq_data:
-        input = [word_dict[n] for n in seq[:-1]] # 'm', 'a' , 'k' is input
+        input = [word_dict[n] for n in seq[:-1]] # 'm', 'a' , 'k' is input把最后一个字母当成target，前面看成input
         target = word_dict[seq[-1]] # 'e' is target
         input_batch.append(np.eye(n_class)[input])
         target_batch.append(target)
@@ -25,12 +25,13 @@ class TextLSTM(nn.Module):
         self.b = nn.Parameter(torch.ones([n_class]))
 
     def forward(self, X):
-        input = X.transpose(0, 1)  # X : [n_step, batch_size, n_class]
+        input = X.transpose(0, 1)  # X : [n_step, batch_size, n_class]为了匹配lstm的期望输入
 
-        hidden_state = torch.zeros(1, len(X), n_hidden)  # [num_layers(=1) * num_directions(=1), batch_size, n_hidden]
+        #lstm初始化隐藏状态和神经元状态
+        hidden_state = torch.zeros(1, len(X), n_hidden)  # [num_layers(=1) * num_directions(=1), batch_size, n_hidden] 
         cell_state = torch.zeros(1, len(X), n_hidden)     # [num_layers(=1) * num_directions(=1), batch_size, n_hidden]
 
-        outputs, (_, _) = self.lstm(input, (hidden_state, cell_state))
+        outputs, (_, _) = self.lstm(input, (hidden_state, cell_state))#(_, _)原来是最终的隐藏状态和神经元状态，这里用——表示说明是不需要的变量
         outputs = outputs[-1]  # [batch_size, n_hidden]
         model = self.W(outputs) + self.b  # model : [batch_size, n_class]
         return model
@@ -40,8 +41,8 @@ if __name__ == '__main__':
     n_hidden = 128 # number of hidden units in one cell
 
     char_arr = [c for c in 'abcdefghijklmnopqrstuvwxyz']
-    word_dict = {n: i for i, n in enumerate(char_arr)}
-    number_dict = {i: w for i, w in enumerate(char_arr)}
+    word_dict = {n: i for i, n in enumerate(char_arr)}#（字母：编号）
+    number_dict = {i: w for i, w in enumerate(char_arr)}#（编号：字母）
     n_class = len(word_dict)  # number of class(=number of vocab)
 
     seq_data = ['make', 'need', 'coal', 'word', 'love', 'hate', 'live', 'home', 'hash', 'star']
