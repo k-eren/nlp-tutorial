@@ -11,8 +11,8 @@ def make_batch():
 
     for sen in sentences:
         word = sen.split()  # space tokenizer
-        input = [word_dict[n] for n in word[:-1]]  # create (1~n-1) as input
-        target = word_dict[word[-1]]  # create (n) as target, We usually call this 'casual language model'
+        input = [word_dict[n] for n in word[:-1]]  # create (1~n-1) as input#前面的看成input
+        target = word_dict[word[-1]]  # create (n) as target, We usually call this 'casual language model'最后一个词看成目标词汇
 
         input_batch.append(np.eye(n_class)[input])
         target_batch.append(target)
@@ -22,21 +22,21 @@ def make_batch():
 class TextRNN(nn.Module):
     def __init__(self):
         super(TextRNN, self).__init__()
-        self.rnn = nn.RNN(input_size=n_class, hidden_size=n_hidden)
+        self.rnn = nn.RNN(input_size=n_class, hidden_size=n_hidden)#第一个参数输入数据的特征维度大小，第二个参数为隐藏状态的特征维度大小
         self.W = nn.Linear(n_hidden, n_class, bias=False)
         self.b = nn.Parameter(torch.ones([n_class]))
 
     def forward(self, hidden, X):
-        X = X.transpose(0, 1) # X : [n_step, batch_size, n_class]
+        X = X.transpose(0, 1) # X : [n_step, batch_size, n_class]为了适应 PyTorch 中 RNN 层接受输入的形状要求要把时间步数放在前面
         outputs, hidden = self.rnn(X, hidden)
         # outputs : [n_step, batch_size, num_directions(=1) * n_hidden]
-        # hidden : [num_layers(=1) * num_directions(=1), batch_size, n_hidden]
-        outputs = outputs[-1] # [batch_size, num_directions(=1) * n_hidden]
+        # hidden : [num_layers(=1) * num_directions(=1), batch_size, n_hidden] num_directions=1说明是单向的，=2是双向的
+        outputs = outputs[-1] # [batch_size, num_directions(=1) * n_hidden]取-1是因为outputs中每个位置对应每个时间步的rnn结果，最后一个是最后一个时间步的结果
         model = self.W(outputs) + self.b # model : [batch_size, n_class]
         return model
 
 if __name__ == '__main__':
-    n_step = 2 # number of cells(= number of Step)
+    n_step = 2 # number of cells(= number of Step)#一个step对应一句话中一个单词，一个序列被分割成多个时间步，每个时间步对应序列中的一个位置
     n_hidden = 5 # number of hidden units in one cell
 
     sentences = ["i like dog", "i love coffee", "i hate milk"]
@@ -54,7 +54,9 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     input_batch, target_batch = make_batch()
+    # print(input_batch)
     input_batch = torch.FloatTensor(input_batch)
+    # print(input_batch)
     target_batch = torch.LongTensor(target_batch)
 
     # Training
